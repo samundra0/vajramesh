@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vajra Mesh — Shared-GPU Cloud for Nepal &amp; SAARC</title>
+<meta name="description" content="Vajra Mesh: a multi-tenant GPU cloud and AI model gateway for Nepal & SAARC — pooled GPUs, shared inference, and a unified OpenAI-compatible API for open and frontier models.">
+<meta property="og:title" content="Vajra Mesh — Shared-GPU Cloud for Nepal &amp; SAARC">
+<meta property="og:description" content="Pool GPUs across tenants, serve open and frontier models through one OpenAI-compatible API, and run GPU-powered notebooks. Built for sovereign and private-cloud AI.">
+<meta property="og:type" content="website">
+<style>
+  :root{
+    --bg:#0a0c12; --bg2:#0f131c; --card:#141926; --line:#232a3a;
+    --fg:#eef2fb; --muted:#9aa4b8; --accent:#f5b942; --accent2:#6ea8ff;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0;
+    background:radial-gradient(1200px 620px at 50% -12%, #16233f 0%, var(--bg) 55%);
+    color:var(--fg);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    line-height:1.6; -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1040px; margin:0 auto; padding:0 20px}
+  header{padding:18px 0}
+  .brand{display:flex; align-items:center; gap:10px; font-weight:700; letter-spacing:.3px}
+  .brand .mark{color:var(--accent); font-size:1.15rem; line-height:1}
+  .brand small{color:var(--muted); font-weight:500; margin-left:2px}
+  main{padding:48px 0 24px}
+  .hero{text-align:center; max-width:760px; margin:0 auto}
+  .hero h1{
+    font-size:clamp(2.3rem,7vw,3.8rem); margin:.15em 0 .35em; font-weight:800; letter-spacing:-.5px;
+    background:linear-gradient(90deg,#fff 20%, #f5b942 60%, #6ea8ff);
+    -webkit-background-clip:text; background-clip:text; color:transparent;
+  }
+  .tag{font-size:clamp(1.05rem,2.4vw,1.3rem); color:var(--muted); margin:0 auto; max-width:660px}
+  .tag strong{color:var(--fg)}
+  .pill{display:inline-block; margin-top:20px; padding:6px 14px; border:1px solid var(--line);
+    border-radius:999px; background:var(--bg2); color:var(--muted); font-size:.85rem}
+  .pill b{color:var(--accent); font-weight:600}
+  .grid{display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin:52px 0}
+  .card{background:linear-gradient(180deg,var(--card),var(--bg2)); border:1px solid var(--line);
+    border-radius:14px; padding:22px; transition:border-color .2s}
+  .card:hover{border-color:#33415a}
+  .card h3{margin:6px 0 8px; font-size:1.06rem}
+  .card p{margin:0; color:var(--muted); font-size:.92rem}
+  .card .k{color:var(--accent2); font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size:.78rem; letter-spacing:.4px}
+  .cta{text-align:center; margin:8px 0}
+  .cta a{display:inline-block; padding:12px 22px; border-radius:10px; background:var(--accent);
+    color:#0a0c12; font-weight:700; text-decoration:none}
+  .cta a.ghost{background:transparent; border:1px solid var(--line); color:var(--fg); margin-left:10px; font-weight:600}
+  footer{padding:28px 0 44px; color:var(--muted); font-size:.85rem; text-align:center;
+    border-top:1px solid var(--line); margin-top:40px}
+  footer a{color:var(--accent2); text-decoration:none}
+  @media (max-width:720px){
+    .grid{grid-template-columns:1fr}
+    .cta a{display:block; width:100%; max-width:340px; margin:8px auto}
+    .cta a.ghost{margin-left:0}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="brand"><span class="mark">◈</span> Vajra Mesh <small>· shared-GPU cloud</small></div>
+  </header>
+  <main>
+    <div class="hero">
+      <h1>Vajra Mesh</h1>
+      <p class="tag">A multi-tenant <strong>GPU cloud</strong> and <strong>AI model gateway</strong> for
+      Nepal &amp; SAARC. Pool GPUs across tenants, serve open and frontier models through a single
+      API, and run GPU-powered notebooks — built for sovereign and private-cloud AI.</p>
+      <span class="pill">Status: <b>Launching soon</b></span>
+    </div>
+
+    <div class="grid">
+      <div class="card">
+        <h3>GPU sharing</h3>
+        <span class="k">HAMi · HAIShare</span>
+        <p>Multi-tenant GPU allocation across a pooled fleet, so a single card can safely serve many
+        workloads at once.</p>
+      </div>
+      <div class="card">
+        <h3>AI model gateway</h3>
+        <span class="k">OpenAI-compatible</span>
+        <p>One API that routes to open models (vLLM) and frontier models (Anthropic / Claude), with
+        live spend tracking.</p>
+      </div>
+      <div class="card">
+        <h3>GPU notebooks</h3>
+        <span class="k">Jupyter</span>
+        <p>Instant, GPU-backed Jupyter notebooks for experimentation, right next to the models and
+        data you're working with.</p>
+      </div>
+    </div>
+
+    <div class="cta">
+      <a href="mailto:samundra@samundrarajbajracharya.com.np">Get in touch</a>
+      <a class="ghost" href="https://vajramesh.com">vajramesh.com — coming soon</a>
+    </div>
+  </main>
+  <footer>
+    Vajra Mesh · launching at <a href="https://vajramesh.com">vajramesh.com</a> ·
+    <a href="mailto:samundra@samundrarajbajracharya.com.np">Contact</a>
+  </footer>
+</div>
+</body>
+</html>
