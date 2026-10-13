@@ -4,50 +4,54 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Vajra Mesh — the systems that make GPUs shareable</title>
-<meta name="description" content="Vajra Mesh is the software that turns GPUs into a shared, in-country AI platform: multi-tenant GPU sharing, an OpenAI-compatible model API (open + Claude), and GPU notebooks. We build the systems, not the servers — it runs on the GPUs you or your partner already have, in-country, billed in rupees.">
+<meta name="description" content="Vajra Mesh is the software that turns GPUs you already have into a shared, in-country AI platform: multi-tenant GPU sharing, one OpenAI-compatible model API (open + Claude), and GPU notebooks. We build the systems, not the servers — it runs in-country, billed by the second, in rupees.">
 <meta property="og:title" content="Vajra Mesh — the systems behind a shared GPU">
 <meta property="og:description" content="The systems that make GPUs shareable: multi-tenant sharing, a model API, GPU notebooks. No GPUs, no infra — just the tech. In-country, in rupees.">
 <meta property="og:type" content="website">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
   :root{
     --bg:#F5F3EC; --bg2:#FBFAF4; --ink:#1b1a16; --muted:#6d6a60;
     --line:rgba(27,26,22,.13); --line2:rgba(27,26,22,.06);
     --accent:#9a6a12; --accent-2:#7a510f; --accent-soft:rgba(154,106,18,.10);
+    --ok:#5ad19a;
     --serif:"Fraunces",Georgia,"Times New Roman",serif;
     --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
   }
   *{box-sizing:border-box}
   html{scroll-behavior:smooth}
-  body{
-    margin:0; background:var(--bg); color:var(--ink);
-    font-family:var(--mono); font-size:14px; line-height:1.6;
-    -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility;
-  }
+  body{margin:0; background:var(--bg); color:var(--ink); font-family:var(--mono); font-size:14px; line-height:1.6; -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility}
   a{color:inherit}
   .wrap{max-width:1120px; margin:0 auto; padding:0 24px}
 
+  /* scroll progress */
+  #progress{position:fixed; top:0; left:0; height:2px; width:0; background:var(--accent); z-index:60}
+
+  /* reveal-on-scroll (base hidden state; JS adds .in) */
+  .reveal{opacity:0; transform:translateY(16px); transition:opacity .6s ease, transform .6s cubic-bezier(.2,.7,.2,1)}
+  .reveal.in{opacity:1; transform:none}
+
   /* ---------- header ---------- */
-  header{border-bottom:1px solid var(--line)}
+  header{position:sticky; top:0; z-index:50; border-bottom:1px solid var(--line); background:rgba(245,243,236,.72); backdrop-filter:saturate(1.15) blur(9px); transition:background .25s, box-shadow .25s}
+  header.scrolled{background:var(--bg); box-shadow:0 1px 0 var(--line)}
   .bar{display:flex; align-items:center; justify-content:space-between; height:64px}
   .brand{display:flex; align-items:center; gap:9px; font-family:var(--mono); font-size:14px; font-weight:500; letter-spacing:.02em}
-  .mark{color:var(--accent); font-size:17px; line-height:1}
+  .mark{color:var(--accent); font-size:17px; line-height:1; display:inline-block; transition:transform .55s cubic-bezier(.34,1.4,.5,1)}
+  .brand:hover .mark{transform:rotate(90deg)}
   .brand small{color:var(--muted); font-weight:300; margin-left:2px}
   .nav{display:flex; align-items:center; gap:22px}
-  .nav .l{font-size:12px; color:var(--muted); letter-spacing:.02em}
+  .nav .l{font-size:12px; color:var(--muted); letter-spacing:.02em; position:relative}
+  .nav .l::after{content:""; position:absolute; left:0; right:0; bottom:-4px; height:1px; background:var(--accent); transform:scaleX(0); transform-origin:left; transition:transform .25s}
   .nav .l:hover{color:var(--ink)}
-  .pill{
-    display:inline-block; background:var(--accent); color:#fff8ec; text-decoration:none;
-    font-size:12px; font-weight:500; letter-spacing:.02em; padding:8px 15px; border-radius:999px;
-    transition:background .18s;
-  }
-  .pill:hover{background:var(--accent-2)}
+  .nav .l:hover::after{transform:scaleX(1)}
+  .pill{display:inline-block; background:var(--accent); color:#fff8ec; text-decoration:none; font-size:12px; font-weight:500; letter-spacing:.02em; padding:8px 15px; border-radius:999px; transition:background .18s, transform .18s}
+  .pill:hover{background:var(--accent-2); transform:translateY(-1px)}
   .burger{display:none; background:none; border:0; color:var(--ink); font-size:20px; cursor:pointer}
 
   /* ---------- hero ---------- */
-  .hero{position:relative; overflow:hidden; text-align:center; padding:72px 0 56px}
+  .hero{position:relative; overflow:hidden; text-align:left; padding:56px 0 48px}
   .hero::before{
     content:""; position:absolute; inset:0; z-index:0; pointer-events:none;
     background-image:
@@ -56,99 +60,160 @@
     background-size:34px 34px;
     -webkit-mask-image:radial-gradient(130% 85% at 50% 0%, #000 25%, transparent 72%);
     mask-image:radial-gradient(130% 85% at 50% 0%, #000 25%, transparent 72%);
+    animation:lattice 16s ease-in-out infinite;
   }
+  @keyframes lattice{0%,100%{opacity:.55}50%{opacity:1}}
   .hero > *{position:relative; z-index:1}
-  .eyebrow{
-    font-size:11px; letter-spacing:.22em; text-transform:uppercase; color:var(--muted);
-    display:flex; align-items:center; gap:14px; justify-content:center; margin:0 0 22px;
-  }
+  .eyebrow{font-size:11px; letter-spacing:.22em; text-transform:uppercase; color:var(--muted); display:flex; align-items:center; gap:14px; justify-content:center; margin:0 0 22px}
   .eyebrow::before,.eyebrow::after{content:""; width:34px; height:1px; background:var(--line)}
   .eyebrow .dot{color:var(--accent); font-size:9px}
-  h1{
-    font-family:var(--serif); font-weight:500; font-size:clamp(46px,9vw,96px);
-    line-height:.98; letter-spacing:-.02em; margin:0; text-align:center;
-  }
+  h1{font-family:var(--serif); font-weight:500; font-size:clamp(46px,9vw,92px); line-height:.98; letter-spacing:-.02em; margin:0; text-align:center}
   h1 em{font-style:italic; color:var(--accent)}
-  .lede{
-    max-width:600px; margin:20px auto 0; color:var(--muted); font-weight:300; font-size:14px; line-height:1.7;
-  }
+  .lede{max-width:620px; margin:20px auto 0; color:var(--muted); font-weight:300; font-size:14px; line-height:1.7}
   .chips{display:flex; gap:9px; flex-wrap:wrap; justify-content:center; margin:26px auto 0; max-width:760px}
-  .chip{
-    border:1px solid var(--line); background:var(--bg2); color:var(--muted);
-    font-size:11px; letter-spacing:.03em; padding:7px 12px; border-radius:999px;
-  }
+  .chip{border:1px solid var(--line); background:var(--bg2); color:var(--muted); font-size:11px; letter-spacing:.03em; padding:7px 12px; border-radius:999px; transition:transform .18s, border-color .18s, color .18s}
+  .chip:hover{transform:translateY(-2px); border-color:var(--accent); color:var(--ink)}
   .cta-row{display:flex; gap:12px; justify-content:center; align-items:center; margin-top:30px; flex-wrap:wrap}
-  .cta-row .ghost{font-size:12px; color:var(--muted); text-decoration:none; border-bottom:1px solid var(--line); padding-bottom:2px}
+  .cta-row .ghost{font-size:12px; color:var(--muted); text-decoration:none; border-bottom:1px solid var(--line); padding-bottom:2px; transition:color .18s, border-color .18s}
   .cta-row .ghost:hover{color:var(--ink); border-color:var(--accent)}
-  .hero-note{max-width:560px; margin:24px auto 0; font-size:11.5px; line-height:1.6; color:var(--muted); letter-spacing:.03em; text-align:center; font-weight:300}
+  .hero-note{max-width:560px; margin:22px auto 0; font-size:11.5px; line-height:1.6; color:var(--muted); letter-spacing:.03em; text-align:center; font-weight:300}
+
+  /* live meter (dark console card) */
+  .meter{margin:34px auto 0; max-width:520px; text-align:left; background:var(--ink); color:var(--bg); border-radius:10px; padding:16px 18px; font-size:12px; box-shadow:0 24px 50px -34px rgba(27,26,22,.7); border:1px solid rgba(255,255,255,.06)}
+  .meter .m-head{display:flex; align-items:center; gap:8px; color:var(--muted); font-size:10.5px; letter-spacing:.06em; text-transform:uppercase; margin-bottom:12px}
+  .meter .m-cmd{font-size:12.5px; color:var(--bg); margin:0 0 14px; padding-bottom:13px; border-bottom:1px solid rgba(255,255,255,.09); white-space:nowrap; overflow-x:auto; font-variant-numeric:tabular-nums}
+  .meter .m-cmd .d{color:#e9b865}
+  .meter .m-live{width:7px; height:7px; border-radius:999px; background:var(--ok); box-shadow:0 0 0 0 rgba(90,209,154,.55); animation:pulse 2s infinite}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(90,209,154,.5)}70%{box-shadow:0 0 0 7px rgba(90,209,154,0)}100%{box-shadow:0 0 0 0 rgba(90,209,154,0)}}
+  .meter .m-row{display:flex; justify-content:space-between; gap:12px; padding:4px 0; color:var(--bg); font-size:12px}
+  .meter .m-row > span{color:var(--muted)}
+  .meter .m-row b{font-weight:500; font-variant-numeric:tabular-nums}
+  .meter .m-row .npr{color:#e9b865}
+  .meter .m-row .npr i{font-style:normal; color:var(--muted); font-size:10px; letter-spacing:.04em; margin-left:4px}
+
+  /* two-column hero (copy left / live meter right) */
+  .hero-grid{display:grid; grid-template-columns:1.08fr .92fr; gap:56px; align-items:start}
+  .hero-copy{text-align:left}
+  .hero-copy .eyebrow{justify-content:flex-start; margin-bottom:20px}
+  .hero-copy .eyebrow::after{display:none}
+  .hero-copy h1{text-align:left}
+  .hero-copy .lede{margin:20px 0 0; max-width:540px}
+  .hero-copy .chips{justify-content:flex-start; margin:24px 0 0; max-width:none}
+  .hero-copy .cta-row{justify-content:flex-start; margin-top:28px}
+  .hero-meter{text-align:left}
+  .hero-meter .meter{margin:0; max-width:none; font-size:13px; padding:18px 20px}
+  .hero-meter .meter-cap{margin:13px 2px 0; font-size:10.5px; letter-spacing:.06em; text-transform:uppercase; color:var(--muted); text-align:right}
+  .hero-note{max-width:460px; margin:22px 0 0; text-align:left; color:var(--muted); font-weight:300; font-size:12px; line-height:1.6}
+
+  /* live-meter extras: cursor, utilization bar, request log */
+  .meter .m-cursor{display:inline-block; width:8px; height:15px; background:var(--bg); margin-left:4px; vertical-align:-2px; animation:blink 1.1s steps(1,end) infinite}
+  @keyframes blink{50%{opacity:0}}
+  .meter .m-util{display:flex; align-items:center; gap:10px; margin:0 0 14px; font-size:11px; color:var(--muted)}
+  .meter .m-util-bar{flex:1; height:4px; border-radius:999px; background:rgba(255,255,255,.09); overflow:hidden}
+  .meter .m-util-bar i{display:block; height:100%; width:78%; background:linear-gradient(90deg,#e9b865,#c98f2f); transition:width .9s ease}
+  .meter .m-util span{white-space:nowrap; font-variant-numeric:tabular-nums}
+  .meter .util-pct{color:#e9b865; font-weight:500}
+  .meter .m-log{margin-top:12px; padding-top:11px; border-top:1px solid rgba(255,255,255,.09); color:var(--muted); font-size:10.5px; letter-spacing:.01em; white-space:nowrap; overflow:hidden; transition:opacity .35s}
+  .meter .m-log b{color:#e9b865; font-weight:500}
+
+  /* system status strip */
+  .sysbar{border-bottom:1px solid var(--line2); background:var(--bg2); font-size:10.5px; letter-spacing:.08em; text-transform:uppercase; color:var(--muted)}
+  .sysbar .wrap{display:flex; align-items:center; gap:11px; height:30px}
+  .sysbar .s{color:var(--line)}
+  .sysbar .ok{color:var(--ok)}
+  .sysbar .ok::before{content:"●"; margin-right:6px; font-size:7px; vertical-align:1px}
+
+  /* two-column hero: mobile */
+  @media (max-width:900px){
+    .hero-grid{grid-template-columns:1fr; gap:34px}
+    .hero-meter{order:2}
+  }
+  @media (max-width:640px){
+    .hero-copy .eyebrow{flex-wrap:wrap; row-gap:6px}
+    .hero-copy .eyebrow::before,.hero-copy .eyebrow::after{display:none}
+    .sysbar .sm-hide{display:none}
+    .meter .m-cmd{white-space:normal}
+  }
+  @media (max-width:520px){
+    .hero-grid{gap:26px}
+    .hero-meter .meter{padding:15px 16px}
+  }
 
   /* ---------- stat row ---------- */
   .stats{display:grid; grid-template-columns:repeat(4,1fr); border-top:1px solid var(--line); border-bottom:1px solid var(--line)}
   .stat{padding:30px 22px; border-right:1px solid var(--line)}
   .stat:last-child{border-right:0}
-  .stat .n{font-family:var(--mono); font-weight:300; font-size:44px; letter-spacing:-.02em; line-height:1}
+  .stat .n{font-family:var(--mono); font-weight:300; font-size:44px; letter-spacing:-.02em; line-height:1; font-variant-numeric:tabular-nums}
   .stat .n sup{font-size:15px; color:var(--muted); font-weight:400; margin-left:2px}
   .stat .k{font-size:10.5px; letter-spacing:.16em; text-transform:uppercase; color:var(--muted); margin-top:14px}
   .stat .s{font-size:12px; color:var(--muted); font-weight:300; margin-top:6px}
 
   /* ---------- section scaffolding ---------- */
   section{padding:72px 0}
-  .shead{margin-bottom:40px}
+  .shead{margin-bottom:8px}
   .shead .eyebrow{justify-content:flex-start; margin-bottom:18px}
   .shead .eyebrow::before{width:20px}
-  h2{font-family:var(--serif); font-weight:500; font-size:clamp(30px,4.4vw,52px); line-height:1.05; letter-spacing:-.015em; margin:0; max-width:16ch}
+  h2{font-family:var(--serif); font-weight:500; font-size:clamp(30px,4.4vw,52px); line-height:1.05; letter-spacing:-.015em; margin:0; max-width:18ch}
   h2 em{font-style:italic; color:var(--accent)}
-  .sbody{max-width:560px; color:var(--muted); font-weight:300; font-size:14px; line-height:1.7; margin:18px 0 0}
+  .sbody{max-width:600px; color:var(--muted); font-weight:300; font-size:14px; line-height:1.7; margin:18px 0 0}
   .more{display:inline-block; margin-top:22px; font-size:12px; color:var(--ink); text-decoration:none; border-bottom:1px solid var(--accent); padding-bottom:2px}
   .more:hover{color:var(--accent)}
 
   /* ---------- sovereignty list ---------- */
-  .sov-grid{display:grid; grid-template-columns:1fr 1fr; gap:0; margin-top:44px; border-top:1px solid var(--line)}
+  .sov-grid{display:grid; grid-template-columns:1fr 1fr; gap:0; margin-top:40px; border-top:1px solid var(--line)}
   .sov-grid .it{padding:22px 0; border-bottom:1px solid var(--line)}
   .sov-grid .it:nth-child(odd){padding-right:34px}
   .sov-grid .it:nth-child(even){padding-left:34px; border-left:1px solid var(--line)}
   .sov-grid h4{font-family:var(--serif); font-weight:500; font-size:19px; margin:0 0 6px}
   .sov-grid p{margin:0; color:var(--muted); font-size:12.5px; font-weight:300; line-height:1.6}
+  .note-fn{margin:40px 0 0; border-left:2px solid var(--accent); padding:4px 0 4px 24px; max-width:640px}
+  .note-fn p{font-family:var(--serif); font-style:italic; font-size:20px; line-height:1.45; color:var(--ink); margin:0 0 12px}
+  .note-fn cite{font-size:11px; letter-spacing:.06em; color:var(--muted); font-style:normal}
 
-  /* ---------- product cards ---------- */
-  .prods{display:grid; grid-template-columns:repeat(4,1fr); gap:1px; background:var(--line); border:1px solid var(--line)}
-  .prod{background:var(--bg); padding:24px 20px; min-height:100%}
-  .prod .tag{font-size:10px; letter-spacing:.16em; color:var(--accent); text-transform:uppercase}
-  .prod h3{font-family:var(--serif); font-weight:500; font-size:21px; margin:16px 0 8px}
-  .prod p{color:var(--muted); font-size:12.5px; font-weight:300; line-height:1.6; margin:0}
-  .prod .meta{margin-top:16px; padding-top:14px; border-top:1px solid var(--line2); font-size:10.5px; letter-spacing:.04em; color:var(--muted)}
+  /* ---------- platform: 1 flagship + 3 rows (asymmetric) ---------- */
+  .plat{display:grid; grid-template-columns:1.25fr 1fr; gap:1px; background:var(--line); border:1px solid var(--line); margin-top:40px}
+  .plat-lead{background:var(--bg); padding:30px 28px}
+  .tag{font-size:10px; letter-spacing:.16em; color:var(--accent); text-transform:uppercase}
+  .plat-lead h3{font-family:var(--serif); font-weight:500; font-size:26px; margin:16px 0 10px}
+  .plat-lead p{color:var(--muted); font-size:13px; font-weight:300; line-height:1.65; margin:0 0 20px}
+  .code{display:block; font-size:11px; background:var(--bg2); border:1px solid var(--line); border-radius:7px; padding:9px 11px; color:var(--ink); overflow-x:auto; white-space:nowrap; font-variant-numeric:tabular-nums}
+  .code .d{color:var(--accent)}
+  .plat-side{background:var(--bg2); display:flex; flex-direction:column}
+  .plat-side .row{padding:24px 28px; border-bottom:1px solid var(--line); transition:background .18s; flex:1}
+  .plat-side .row:last-child{border-bottom:0}
+  .plat-side .row:hover{background:var(--bg)}
+  .plat-side .row h4{font-family:var(--serif); font-weight:500; font-size:19px; margin:10px 0 6px}
+  .plat-side .row p{color:var(--muted); font-size:12.5px; font-weight:300; line-height:1.6; margin:0 0 12px}
+  .plat-side .row .meta{font-size:10.5px; letter-spacing:.04em; color:var(--muted)}
 
   /* ---------- fleet ---------- */
-  .fleet{display:grid; grid-template-columns:repeat(3,1fr); gap:1px; background:var(--line); border:1px solid var(--line)}
-  .gpu{background:var(--bg2); padding:26px 22px}
+  .fleet{display:grid; grid-template-columns:repeat(3,1fr); gap:1px; background:var(--line); border:1px solid var(--line); margin-top:40px}
+  .gpu{background:var(--bg2); padding:26px 22px; transition:background .2s}
+  .gpu:hover{background:var(--bg)}
   .gpu .head{display:flex; align-items:center; justify-content:space-between; margin-bottom:20px}
   .gpu .head .t{font-size:11px; letter-spacing:.12em; text-transform:uppercase}
   .gpu .st{font-size:10px; letter-spacing:.1em; color:var(--accent); border:1px solid var(--accent-soft); background:var(--accent-soft); padding:3px 8px; border-radius:999px}
-  .gpu .mem{font-weight:300; font-size:38px; letter-spacing:-.02em; line-height:1}
+  .gpu .mem{font-weight:300; font-size:38px; letter-spacing:-.02em; line-height:1; font-variant-numeric:tabular-nums}
   .gpu .mem small{font-size:13px; color:var(--muted); font-weight:400}
   .gpu .use{color:var(--muted); font-size:12px; font-weight:300; margin:14px 0 0; line-height:1.55}
   .gpu .sub{font-size:11px; color:var(--muted); margin-top:10px; letter-spacing:.02em}
 
   /* ---------- how it works ---------- */
-  .steps{display:grid; grid-template-columns:repeat(3,1fr); gap:1px; background:var(--line); border:1px solid var(--line)}
-  .step{background:var(--bg2); padding:28px 24px}
+  .steps{display:grid; grid-template-columns:repeat(3,1fr); gap:1px; background:var(--line); border:1px solid var(--line); margin-top:40px}
+  .step{background:var(--bg2); padding:28px 24px; transition:background .2s}
+  .step:hover{background:var(--bg)}
   .step .num{font-size:11px; letter-spacing:.16em; color:var(--muted)}
   .step .num b{color:var(--accent); font-weight:500}
   .step h3{font-family:var(--serif); font-weight:500; font-size:22px; margin:18px 0 8px}
   .step p{color:var(--muted); font-size:12.5px; font-weight:300; line-height:1.6; margin:0 0 16px}
-  .code{
-    display:block; font-size:11px; background:var(--bg); border:1px solid var(--line);
-    border-radius:7px; padding:9px 11px; color:var(--ink); overflow-x:auto; white-space:nowrap;
-  }
-  .code .d{color:var(--accent)}
 
   /* ---------- cta band ---------- */
   .band{background:var(--ink); color:var(--bg); text-align:center; padding:76px 0}
   .band .eyebrow{color:var(--muted); justify-content:center}
   .band .eyebrow::before,.band .eyebrow::after{background:rgba(255,255,255,.18)}
-  .band h2{color:var(--bg); margin:0 auto; max-width:14ch}
+  .band h2{color:var(--bg); margin:0 auto; max-width:16ch}
   .band h2 em{color:#e9b865}
-  .band .sbody{margin-left:auto; margin-right:auto; color:#b9b6ab; text-align:center}
+  .band .sbody{margin:18px auto 0; color:#b9b6ab; text-align:center; max-width:520px}
   .band .pill{margin-top:30px}
   .band .note{font-size:11px; color:var(--muted); margin-top:16px}
 
@@ -171,75 +236,118 @@
     .stats{grid-template-columns:1fr 1fr}
     .stat:nth-child(2){border-right:0}
     .stat:nth-child(1),.stat:nth-child(2){border-bottom:1px solid var(--line)}
-    .prods{grid-template-columns:1fr 1fr}
+    .plat{grid-template-columns:1fr}
     .fleet{grid-template-columns:1fr}
     .steps{grid-template-columns:1fr}
     .foot-top{grid-template-columns:1fr 1fr}
   }
   @media (max-width:640px){
-    .nav .l{display:none}
+    .nav{position:fixed; top:64px; left:0; right:0; z-index:40; background:var(--bg); border-bottom:1px solid var(--line); flex-direction:column; align-items:flex-start; padding:18px 24px 22px; gap:16px; transform:translateY(-10px); opacity:0; pointer-events:none; transition:opacity .25s, transform .25s}
+    .nav.open{transform:none; opacity:1; pointer-events:auto}
+    .nav .l{display:block; font-size:13px}
     .burger{display:block}
+    .brand small{display:none}
+    .code{white-space:normal; font-size:10.5px}
     section{padding:52px 0}
-    .hero{padding:56px 0 40px}
+    .hero{padding:52px 0 40px}
     .sov-grid{grid-template-columns:1fr}
     .sov-grid .it:nth-child(even){padding-left:0; border-left:0}
-    .prods{grid-template-columns:1fr}
     .cta-row .pill,.cta-row .ghost{width:100%; max-width:320px; text-align:center; margin:4px auto}
+    .meter{max-width:100%}
+    .meter .m-cmd{white-space:normal}
+    .note-fn{padding-left:18px}
+    .note-fn p{font-size:18px}
+  }
+  @media (max-width:520px){
+    .stats{grid-template-columns:1fr}
+    .stat{border-right:0; border-bottom:1px solid var(--line)}
+    .stat:last-child{border-bottom:0}
+  }
+
+  /* ---------- reduced motion ---------- */
+  @media (prefers-reduced-motion: reduce){
+    *{animation:none !important; transition:none !important}
+    .reveal{opacity:1 !important; transform:none !important}
   }
 </style>
 </head>
 <body>
 
+<div id="progress" aria-hidden="true"></div>
+
+<div class="sysbar" aria-hidden="true">
+  <div class="wrap">
+    <span class="sm-hide">region&nbsp;KTM</span><span class="s sm-hide">·</span><span class="sm-hide">3 nodes</span><span class="s sm-hide">·</span><span class="ok">nominal</span><span class="s">·</span><span id="sys-clock">KTM --:--</span>
+  </div>
+</div>
+
 <header>
   <div class="wrap bar">
     <div class="brand"><span class="mark">◈</span> vajra&nbsp;mesh <small>· the systems behind shared GPUs</small></div>
-    <div class="nav">
+    <div class="nav" id="nav">
       <a class="l" href="#platform">platform</a>
       <a class="l" href="#fleet">hardware</a>
       <a class="l" href="#how">how it works</a>
       <a class="pill" href="mailto:samundra@samundrarajbajracharya.com.np">Contact us</a>
-      <button class="burger" aria-label="menu">≡</button>
+      <button class="burger" aria-label="menu" aria-expanded="false">≡</button>
     </div>
   </div>
 </header>
 
 <section class="hero" id="top">
   <div class="wrap">
-    <p class="eyebrow"><span>Launching soon</span> <span class="dot">◆</span> <span>Get started</span></p>
-    <h1>The mesh is <em>online.</em></h1>
-    <p class="lede">The software that turns a GPU into a shared, in-country AI platform — multi-tenant GPU sharing, a single model API for open and frontier models, and GPU notebooks. We build the systems, not the servers.</p>
-    <div class="chips">
-      <span class="chip">multi-tenant · hami + hishare</span>
-      <span class="chip">openai-compatible · vllm + claude</span>
-      <span class="chip">runs on your gpus · in-country · npr</span>
-    </div>
-    <div class="cta-row">
-      <a class="pill" href="mailto:samundra@samundrarajbajracharya.com.np">Contact us</a>
-      <a class="ghost" href="#how">How it works</a>
-      <p class="hero-note">No GPUs. No racks. No data center — just the systems, running on the GPUs you or your partner already have.</p>
+    <div class="hero-grid">
+      <div class="hero-copy">
+        <p class="eyebrow reveal"><span class="dot">◆</span> <span>Vajra Mesh · Kathmandu, Nepal · <span id="ktm-clock">--:--</span></span></p>
+        <h1 class="reveal">Share the GPU <em>you have.</em></h1>
+        <p class="lede reveal">The software layer that turns a GPU you already own into a shared, in-country AI platform.</p>
+        <div class="chips reveal">
+          <span class="chip">multi-tenant</span>
+          <span class="chip">openai-compatible</span>
+          <span class="chip">in-country · npr</span>
+        </div>
+        <div class="cta-row reveal">
+          <a class="pill" href="mailto:samundra@samundrarajbajracharya.com.np">Contact us</a>
+          <a class="ghost" href="#how">How it works</a>
+        </div>
+        <p class="hero-note reveal">No GPUs, no racks — just the systems, running on the GPUs you already have.</p>
+      </div>
+      <div class="hero-meter">
+        <div class="meter reveal" id="meter" aria-hidden="true">
+          <div class="m-head"><span class="m-live"></span> live · meter running</div>
+          <div class="m-cmd"><span class="d">$</span> vajra share --card L4 --tenants 8<span class="m-cursor"></span></div>
+          <div class="m-util"><div class="m-util-bar"><i id="m-util" style="width:78%"></i></div><span>L4 · <b class="util-pct" id="m-util-pct">78</b>% util</span></div>
+          <div class="m-row"><span>uptime</span><b id="m-uptime">04:14</b></div>
+          <div class="m-row"><span>served</span><b>8 tenants · 1 shared L4</b></div>
+          <div class="m-row"><span>req/min</span><b id="m-req">1.4k</b></div>
+          <div class="m-row"><span>meter</span><b class="npr"><span id="m-npr">≈ 940</span> NPR <i>demo</i></b></div>
+          <div class="m-log" id="m-log">tenant-3 → claude-3.5 · 2.1s · <b>142 NPR</b></div>
+        </div>
+        <p class="meter-cap">live demo · updates every second</p>
+      </div>
     </div>
   </div>
 </section>
 
 <div class="wrap">
   <div class="stats">
-    <div class="stat">
-      <div class="n">4</div>
+    <div class="stat reveal">
+      <div class="n" data-count="4">4</div>
       <div class="k">systems, one control plane</div>
       <div class="s">sharing · gateway · notebooks · ops</div>
     </div>
-    <div class="stat">
-      <div class="n">1</div>
+    <div class="stat reveal">
+      <div class="n" data-count="1">1</div>
       <div class="k">OpenAI-compatible API</div>
       <div class="s">open + Claude, one URL</div>
     </div>
-    <div class="stat">
-      <div class="n">0</div>
+    <div class="stat reveal">
+      <div class="n" data-count="0">0</div>
       <div class="k">GPUs to buy</div>
       <div class="s">we ship the software, not the silicon</div>
     </div>
-    <div class="stat">
-      <div class="n">1<sup>s</sup></div>
+    <div class="stat reveal">
+      <div class="n" data-count="1">1<sup>s</sup></div>
       <div class="k">per-second metering</div>
       <div class="s">pay only while a job runs</div>
     </div>
@@ -248,50 +356,56 @@
 
 <section id="why">
   <div class="wrap">
-    <div class="shead">
+    <div class="shead reveal">
       <p class="eyebrow">Why Vajra Mesh</p>
       <h2>Sovereign by <em>construction</em>, not by contract.</h2>
     </div>
     <div class="sov-grid">
-      <div class="it"><h4>In-country data</h4><p>Your data is stored and processed in Nepal — it never has to cross a border to reach your own compute.</p></div>
-      <div class="it"><h4>In-country billing</h4><p>Pay in rupees through eSewa, Khalti, bank transfer or a formal invoice. No overseas settlement.</p></div>
-      <div class="it"><h4>In-country support</h4><p>A team on your timezone. When a training run matters, the people answering are here.</p></div>
-      <div class="it"><h4>The hardware stays yours</h4><p>Vajra Mesh is software. The GPUs stay yours or your partner's — we build and run the systems on top. Nothing to buy, just the tech.</p></div>
+      <div class="it reveal"><h4>In-country data</h4><p>Your data is stored and processed in Nepal — it never has to cross a border to reach your own compute.</p></div>
+      <div class="it reveal"><h4>In-country billing</h4><p>Pay in rupees through eSewa, Khalti, bank transfer or a formal invoice. No overseas settlement.</p></div>
+      <div class="it reveal"><h4>In-country support</h4><p>A team on your timezone. When a training run matters, the people answering are here.</p></div>
+      <div class="it reveal"><h4>The hardware stays yours</h4><p>Vajra Mesh is software. The GPUs stay yours or your partner's — we build and run the systems on top. Nothing to buy, just the tech.</p></div>
     </div>
+    <blockquote class="note-fn reveal">
+      <p>"We're one person, in Kathmandu, building the layer that lets a GPU you already own serve everyone who needs it — in-country, in rupees. No cloud, no markup on silicon, no overseas settlement."</p>
+      <cite>— Samundra, founder</cite>
+    </blockquote>
   </div>
 </section>
 
 <section id="platform">
   <div class="wrap">
-    <div class="shead">
+    <div class="shead reveal">
       <p class="eyebrow">The platform</p>
       <h2>One <em>control plane.</em> Four systems.</h2>
       <p class="sbody">Four systems, one control plane: the sharing engine, the model gateway, GPU notebooks, and the dashboard that ties them together. Deploy it on the GPUs you or your partner already have — we build the software, not the silicon.</p>
     </div>
-    <div class="prods">
-      <div class="prod">
-        <div class="tag">Sharing Engine</div>
+    <div class="plat">
+      <div class="plat-lead reveal">
+        <div class="tag">Sharing engine · flagship</div>
         <h3>Multi-tenant GPU sharing</h3>
         <p>The HAMi + HAIShare engine that puts many tenants on one card — billed by the second, only while a job runs. The card stays yours.</p>
-        <div class="meta">hami · hishare · per-second</div>
+        <span class="code"><span class="d">$</span> vajra share --card L4 --tenants 8  →  one card, 8 fair shares</span>
       </div>
-      <div class="prod">
-        <div class="tag">Model Gateway</div>
-        <h3>Model gateway</h3>
-        <p>One OpenAI-compatible API routing to open models (vLLM) and frontier models (Anthropic / Claude), priced per token. Change one URL, keep your code.</p>
-        <div class="meta">openai-compatible · claude · per-token</div>
-      </div>
-      <div class="prod">
-        <div class="tag">Notebooks</div>
-        <h3>GPU notebooks</h3>
-        <p>GPU-backed Jupyter notebooks with a fair share per person and idle sessions that shut themselves down.</p>
-        <div class="meta">jupyter · per-user quotas · idle culling</div>
-      </div>
-      <div class="prod">
-        <div class="tag">Control Plane</div>
-        <h3>The control plane</h3>
-        <p>One dashboard to manage tenancy, quotas, scheduling and the model gateway across every GPU the platform runs on. This is where you operate the system.</p>
-        <div class="meta">tenancy · quotas · scheduling · observability</div>
+      <div class="plat-side">
+        <div class="row reveal">
+          <div class="tag">Model gateway</div>
+          <h4>One OpenAI-compatible API</h4>
+          <p>Routes to open models (vLLM) and frontier models (Anthropic / Claude), priced per token. Change one URL, keep your code.</p>
+          <div class="meta">openai-compatible · claude · per-token</div>
+        </div>
+        <div class="row reveal">
+          <div class="tag">Notebooks</div>
+          <h4>GPU notebooks</h4>
+          <p>GPU-backed Jupyter with a fair share per person and idle sessions that shut themselves down.</p>
+          <div class="meta">jupyter · per-user quotas · idle culling</div>
+        </div>
+        <div class="row reveal">
+          <div class="tag">Control plane</div>
+          <h4>The control plane</h4>
+          <p>The dashboard where you operate the whole system: tenancy, quotas, scheduling and the model gateway, across every GPU the platform runs on.</p>
+          <div class="meta">tenancy · quotas · scheduling · observability</div>
+        </div>
       </div>
     </div>
   </div>
@@ -299,25 +413,25 @@
 
 <section id="fleet">
   <div class="wrap">
-    <div class="shead">
+    <div class="shead reveal">
       <p class="eyebrow">Hardware it runs on</p>
       <h2>Runs on the GPUs you <em>already</em> have.</h2>
       <p class="sbody">Vajra Mesh doesn't ship hardware. It's designed to run on the GPUs that actually serve the region's workloads — your fleet, or a partner's.</p>
     </div>
     <div class="fleet">
-      <div class="gpu">
+      <div class="gpu reveal">
         <div class="head"><span class="t">NVIDIA RTX PRO 6000</span><span class="st">target</span></div>
         <div class="mem">96<small> GB</small></div>
         <div class="sub">GDDR7 · 512-bit</div>
         <p class="use">The workhorse card for fast, affordable inference and visual AI — the platform runs on it.</p>
       </div>
-      <div class="gpu">
+      <div class="gpu reveal">
         <div class="head"><span class="t">NVIDIA H200</span><span class="st">target</span></div>
         <div class="mem">141<small> GB</small></div>
         <div class="sub">HBM3e · 6 stacks</div>
         <p class="use">Room for the largest models on one card — big-VRAM serving and fine-tuning.</p>
       </div>
-      <div class="gpu">
+      <div class="gpu reveal">
         <div class="head"><span class="t">NVIDIA L4</span><span class="st">validated</span></div>
         <div class="mem">24<small> GB</small></div>
         <div class="sub">Ada · single socket</div>
@@ -329,24 +443,24 @@
 
 <section id="how">
   <div class="wrap">
-    <div class="shead">
+    <div class="shead reveal">
       <p class="eyebrow">How it works</p>
       <h2>Three steps. No sales call.</h2>
     </div>
     <div class="steps">
-      <div class="step">
+      <div class="step reveal">
         <div class="num"><b>01</b> · about two minutes</div>
         <h3>Tell us the workload</h3>
         <p>The model, the dataset size and the GPU hours you expect. In your own words, or on the console.</p>
         <span class="code"><span class="d">$</span> vajra quote --model 70b --hours 24h →</span>
       </div>
-      <div class="step">
+      <div class="step reveal">
         <div class="num"><b>02</b> · within one working day</div>
         <h3>Get a plan and a firm quote</h3>
         <p>A capacity plan and a price in rupees, from our team in Nepal. No sales call, no back-and-forth.</p>
         <span class="code"><span class="d">$</span> plan.pdf · firm NPR price · reserved capacity</span>
       </div>
-      <div class="step">
+      <div class="step reveal">
         <div class="num"><b>03</b> · billed by the second</div>
         <h3>Deploy and start sharing</h3>
         <p>We stand up the systems on your GPUs (or a partner's). You start sharing cards, routing models and running notebooks — the meter runs only while your jobs run.</p>
@@ -358,11 +472,13 @@
 
 <section class="band">
   <div class="wrap">
-    <p class="eyebrow"><span>Contact</span></p>
-    <h2>Your next run, <em>in-country.</em></h2>
-    <p class="sbody">Bring the workloads. We bring the systems — multi-tenant sharing, one model API, and notebooks — running in-country, billed in rupees. No GPUs, no racks, just the tech.</p>
-    <a class="pill" href="mailto:samundra@samundrarajbajracharya.com.np">Contact us</a>
-    <p class="note">We reply within one working day.</p>
+    <p class="eyebrow reveal"><span>Contact</span></p>
+    <h2 class="reveal">Your next run, <em>in-country.</em></h2>
+    <p class="sbody reveal">Bring the workloads. We bring the systems — multi-tenant sharing, one model API, and notebooks — running in-country, billed in rupees. No GPUs, no racks, just the tech.</p>
+    <div class="reveal">
+      <a class="pill" href="mailto:samundra@samundrarajbajracharya.com.np">Contact us</a>
+      <p class="note">We reply within one working day.</p>
+    </div>
   </div>
 </section>
 
@@ -371,41 +487,40 @@
     <div class="foot-top">
       <div class="foot-brand">
         <div class="brand"><span class="mark">◈</span> vajra&nbsp;mesh</div>
-        <p>The software that turns GPUs into a shared, in-country AI platform. We build the systems, not the servers.</p>
+        <p>The software that turns GPUs you already have into a shared, in-country AI platform. We build the systems, not the servers.</p>
       </div>
       <div class="col">
         <h5>Platform</h5>
         <ul>
           <li><a href="#platform">Platform overview</a></li>
-          <li><a href="#fleet">GPU catalog</a></li>
+          <li><a href="#fleet">Hardware it runs on</a></li>
           <li><a href="#platform">Shared GPUs</a></li>
           <li><a href="#platform">Model gateway</a></li>
           <li><a href="#platform">Notebooks</a></li>
-          <li><a href="#how">Pricing</a></li>
+          <li><a href="#how">How it works</a></li>
         </ul>
       </div>
       <div class="col">
         <h5>Developers</h5>
         <ul>
-          <li><a href="#">Documentation</a></li>
-          <li><a href="#">Getting started</a></li>
-          <li><a href="#">API reference</a></li>
-          <li><a href="#">Use cases</a></li>
+          <li><a href="#platform">Documentation</a></li>
+          <li><a href="#how">Getting started</a></li>
+          <li><a href="#platform">Model gateway API</a></li>
+          <li><a href="#fleet">Supported GPUs</a></li>
         </ul>
       </div>
       <div class="col">
         <h5>Company</h5>
         <ul>
-          <li><a href="#why">About Vajra Mesh</a></li>
+          <li><a href="#why">Why Vajra Mesh</a></li>
           <li><a href="mailto:samundra@samundrarajbajracharya.com.np">Contact</a></li>
-          <li><a href="#">Careers</a></li>
+          <li><a href="#top">Back to top</a></li>
         </ul>
       </div>
     </div>
     <div class="foot-bottom">
       <span>© 2026 Vajra Mesh · Kathmandu, Nepal</span>
       <div class="legal">
-        <a href="#">Privacy</a><a href="#">Terms</a><a href="#">Data residency</a><a href="#">Security</a>
         <a href="mailto:samundra@samundrarajbajracharya.com.np">samundra@samundrarajbajracharya.com.np</a>
       </div>
     </div>
@@ -413,12 +528,146 @@
 </footer>
 
 <script>
-  // mobile menu (progressive: reveals the hidden nav links on small screens)
-  document.querySelector('.burger')?.addEventListener('click', function(){
-    var nav = document.querySelector('.nav');
-    var open = nav.classList.toggle('open');
-    document.querySelectorAll('.nav .l').forEach(function(l){ l.style.display = open ? 'block' : ''; });
-  });
+(function(){
+  var reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // header solidify + scroll progress
+  var header = document.querySelector('header');
+  var bar = document.getElementById('progress');
+  function onScroll(){
+    var y = window.scrollY || document.documentElement.scrollTop;
+    if(header) header.classList.toggle('scrolled', y > 16);
+    var h = document.documentElement.scrollHeight - window.innerHeight;
+    if(bar) bar.style.width = (h > 0 ? (y / h) * 100 : 0) + '%';
+  }
+  window.addEventListener('scroll', onScroll, {passive:true});
+  window.addEventListener('resize', onScroll);
+  onScroll();
+
+  // mobile nav (dropdown panel)
+  var burger = document.querySelector('.burger');
+  var nav = document.getElementById('nav');
+  if(burger){
+    burger.addEventListener('click', function(){
+      var open = nav.classList.toggle('open');
+      burger.setAttribute('aria-expanded', open ? 'true' : 'false');
+    });
+    nav.querySelectorAll('.l, .pill').forEach(function(a){
+      a.addEventListener('click', function(){ nav.classList.remove('open'); burger.setAttribute('aria-expanded','false'); });
+    });
+  }
+
+  // reveal on scroll
+  var revs = Array.prototype.slice.call(document.querySelectorAll('.reveal'));
+  var forceAll = document.location.hash.indexOf('reveal') !== -1; // ?debug: #reveal forces everything visible for screenshots
+  if('IntersectionObserver' in window && !reduce && !forceAll){
+    var io = new IntersectionObserver(function(entries){
+      entries.forEach(function(e){
+        if(e.isIntersecting){ e.target.classList.add('in'); io.unobserve(e.target); }
+      });
+    }, {threshold:0.12, rootMargin:'0px 0px -8% 0px'});
+    revs.forEach(function(el){ io.observe(el); });
+  } else {
+    revs.forEach(function(el){ el.classList.add('in'); });
+  }
+
+  // stat count-up (fire when the stats row enters view)
+  function countUp(el){
+    var target = parseInt(el.getAttribute('data-count'), 10) || 0;
+    var node = el.firstChild; // the leading number text node
+    if(reduce){ node.nodeValue = String(target); return; }
+    var dur = 1000, t0 = null;
+    function step(t){
+      if(t0 === null) t0 = t;
+      var p = Math.min(1, (t - t0) / dur);
+      var e = 1 - Math.pow(1 - p, 3);
+      node.nodeValue = String(Math.round(target * e));
+      if(p < 1) requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
+  }
+  var statsRow = document.querySelector('.stats');
+  if(statsRow){
+    if('IntersectionObserver' in window && !reduce){
+      var cio = new IntersectionObserver(function(es){
+        es.forEach(function(e){
+          if(e.isIntersecting){
+            document.querySelectorAll('.stat .n').forEach(countUp);
+            cio.unobserve(statsRow);
+          }
+        });
+      }, {threshold:0.35});
+      cio.observe(statsRow);
+    } else {
+      document.querySelectorAll('.stat .n').forEach(function(el){ el.firstChild.nodeValue = el.getAttribute('data-count'); });
+    }
+  }
+
+  // live per-second meter (demo) — ticking uptime + NPR accrual
+  var mUptime = document.getElementById('m-uptime');
+  var mNpr = document.getElementById('m-npr');
+  if(mUptime){
+    var t = 254;         // seconds, start "in progress"
+    var npr = 940;       // illustrative NPR accrual
+    function pad(n){ return n < 10 ? '0' + n : '' + n; }
+    function fmt(s){ return pad(Math.floor(s / 60)) + ':' + pad(s % 60); }
+    if(reduce){ mUptime.textContent = fmt(t); }
+    else {
+      setInterval(function(){
+        t += 1; npr += 0.42;
+        mUptime.textContent = fmt(t);
+        if(mNpr) mNpr.textContent = '≈ ' + Math.round(npr).toLocaleString('en-US');
+      }, 1000);
+    }
+  }
+
+  // live KTM clock (Asia/Kathmandu, UTC+05:45)
+  var ktmClock = document.getElementById('ktm-clock');
+  var sysClock = document.getElementById('sys-clock');
+  function ktmTime(){
+    var s;
+    try{ s = new Intl.DateTimeFormat('en-GB',{hour:'2-digit',minute:'2-digit',timeZone:'Asia/Kathmandu'}).format(new Date()); }
+    catch(e){ s = new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}); }
+    return s;
+  }
+  if(ktmClock || sysClock){
+    (function tickClock(){
+      var s = ktmTime();
+      if(ktmClock) ktmClock.textContent = s;
+      if(sysClock) sysClock.textContent = 'KTM ' + s;
+      setTimeout(tickClock, 1000);
+    })();
+  }
+
+  // meter: utilization jitter + cycling request log
+  var utilBar = document.getElementById('m-util');
+  var utilPct = document.getElementById('m-util-pct');
+  var mlog = document.getElementById('m-log');
+  if(utilBar && !reduce){
+    var mReq = document.getElementById('m-req');
+    setInterval(function(){
+      var u = 58 + Math.round(Math.random() * 36);
+      utilBar.style.width = u + '%';
+      if(utilPct) utilPct.textContent = u;
+      if(mReq) mReq.textContent = (1.1 + Math.random() * 0.7).toFixed(1) + 'k';
+    }, 1800);
+    if(mlog){
+      var logs = [
+        'tenant-3 → claude-3.5 · 2.1s · <b>142 NPR</b>',
+        'tenant-1 → vllm/qwen3.8 · 4.7s · <b>96 NPR</b>',
+        'notebook-2 → vllm/llama3 · 1.2s · <b>38 NPR</b>',
+        'tenant-5 → claude-3.5 · 0.8s · <b>51 NPR</b>',
+        'tenant-8 → vllm/qwen3.8 · 3.3s · <b>74 NPR</b>'
+      ];
+      var li = 0;
+      setInterval(function(){
+        li = (li + 1) % logs.length;
+        mlog.style.opacity = 0;
+        setTimeout(function(){ mlog.innerHTML = logs[li]; mlog.style.opacity = 1; }, 350);
+      }, 2600);
+    }
+  }
+})();
 </script>
 </body>
 </html>
